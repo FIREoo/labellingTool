@@ -477,6 +477,7 @@ namespace Wpf_labellingTool
 
         }
 
+        #region //trainning file\\
         private void Btn_addFloder_Click(object sender, RoutedEventArgs e)
         {
             System.Windows.Forms.FolderBrowserDialog path = new System.Windows.Forms.FolderBrowserDialog();
@@ -490,13 +491,25 @@ namespace Wpf_labellingTool
                 MessageBox.Show("沒有png");
                 return;
             }
-            string addStr = OpenFolder.Substring(OpenFolder.LastIndexOf("\\")+1);
+            string addStr = OpenFolder.Substring(OpenFolder.LastIndexOf("\\") + 1);
             addStr += "/";
             ListViewDataCollection.Add(new ListViewData(addStr));
-
+            StreamWriter sw = new StreamWriter("train.txt", true);
+            foreach (FileInfo fi in OpenFiles)
+            {
+                sw.WriteLine($"{tb_preText.Text}{addStr}{fi.Name}");
+            }
+            sw.Flush();
+            sw.Close();
+        }
+        private void Btn_creatTrainFile_Click(object sender, RoutedEventArgs e)
+        {
+            StreamWriter sw = new StreamWriter("train.txt", false);
+            sw.Flush();
+            sw.Close();
         }
     }
-
+    #endregion \\trainning file//
     public class LabellingInfo
     {
         public LabellingInfo(int index, Rectangle rect)
@@ -569,7 +582,7 @@ namespace Wpf_labellingTool
             if (C1 == null)
                 Color1 = new SolidColorBrush(Colors.Black);
         }
-     
+
         public string Pre
         {
             set
@@ -588,7 +601,7 @@ namespace Wpf_labellingTool
             }
             get { return folder; }
         }
-        
+
         public SolidColorBrush Color_back
         {
             set

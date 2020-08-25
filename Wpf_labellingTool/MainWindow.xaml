@@ -62,8 +62,8 @@
             </TabItem>
             <TabItem Header="Tranning text">
                 <Grid Background="#FFE5E5E5">
-                    <Button x:Name="btn_addFloder" Content="Add Folder" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Width="114" Click="Btn_addFloder_Click"/>
-                    <ListView x:Name="lv_tranningList" HorizontalAlignment="Left" Height="191" Margin="129,43,0,0" VerticalAlignment="Top" Width="134" FontSize="14">
+                    <Button x:Name="btn_addFloder" Content="Add Folder" HorizontalAlignment="Left" Margin="10,46,0,0" VerticalAlignment="Top" Width="160" Click="Btn_addFloder_Click"/>
+                    <ListView x:Name="lv_tranningList" HorizontalAlignment="Left" Height="225" Margin="175,10,0,0" VerticalAlignment="Top" Width="142" FontSize="14">
                         <ListView.ItemContainerStyle>
                             <Style TargetType="ListViewItem">
                                 <Setter Property="HorizontalContentAlignment" Value="Stretch" />
@@ -93,7 +93,8 @@
                             </GridView>
                         </ListView.View>
                     </ListView>
-                    <TextBox x:Name="tb_preText" HorizontalAlignment="Left" Height="28" Margin="129,10,0,0" TextWrapping="Wrap" Text="data/obj/" VerticalAlignment="Top" Width="160"/>
+                    <TextBox x:Name="tb_preText" HorizontalAlignment="Left" Height="28" Margin="10,75,0,0" TextWrapping="Wrap" Text="data/obj/" VerticalAlignment="Top" Width="160"/>
+                    <Button x:Name="btn_creatTrainFile" Content="Creat New" HorizontalAlignment="Left" Margin="10,9,0,0" VerticalAlignment="Top" Width="114" Click="Btn_creatTrainFile_Click"/>
                 </Grid>
             </TabItem>
         </TabControl>
