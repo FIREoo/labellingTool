@@ -25,6 +25,7 @@ using Rectangle = System.Drawing.Rectangle;
 using System.Windows.Threading;
 using System.ComponentModel;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 
 namespace Wpf_labellingTool
 {
@@ -141,7 +142,6 @@ namespace Wpf_labellingTool
         List<LabellingInfo> LabelList = new List<LabellingInfo>();
         private void Btn_loadFolder_Click(object sender, RoutedEventArgs e)
         {
-
             System.Windows.Forms.FolderBrowserDialog path = new System.Windows.Forms.FolderBrowserDialog();
             path.ShowDialog();
             OpenFolder = path.SelectedPath;
@@ -168,7 +168,6 @@ namespace Wpf_labellingTool
             OpenFilesIndex = 0;
 
             Btn_reLoadImage_Click(sender, e);
-
         }
 
         private void Btn_nextImage_Click(object sender, RoutedEventArgs e)
@@ -482,34 +481,111 @@ namespace Wpf_labellingTool
         {
             System.Windows.Forms.FolderBrowserDialog path = new System.Windows.Forms.FolderBrowserDialog();
             path.ShowDialog();
-            OpenFolder = path.SelectedPath;
+            string SelectFolder = path.SelectedPath;
+            if (SelectFolder == "")
+                return;
 
-            DirectoryInfo OpenDirectory = new DirectoryInfo(OpenFolder);
+            DirectoryInfo OpenDirectory = new DirectoryInfo(SelectFolder);
             OpenFiles = OpenDirectory.GetFiles("*.png"); //Getting Text files
             if (OpenFiles.Count() == 0)
             {
                 MessageBox.Show("沒有png");
                 return;
             }
-            string addStr = OpenFolder.Substring(OpenFolder.LastIndexOf("\\") + 1);
+            string addStr = SelectFolder.Substring(SelectFolder.LastIndexOf("\\") + 1);
             addStr += "/";
-            ListViewDataCollection.Add(new ListViewData(addStr));
-            StreamWriter sw = new StreamWriter("train.txt", true);
-            foreach (FileInfo fi in OpenFiles)
+            ListViewDataCollection.Add(new ListViewData(addStr, SelectFolder, OpenFiles.Count()));
+        }
+
+        private void Lv_tranningList_Drop(object sender, DragEventArgs e)
+        {
+            if (e.Data.GetDataPresent(DataFormats.FileDrop))
             {
-                sw.WriteLine($"{tb_preText.Text}{addStr}{fi.Name}");
+                string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
+
+                foreach (string folderPath in files)
+                {
+                    DirectoryInfo OpenDirectory = new DirectoryInfo(folderPath);
+                    try
+                    {
+                        OpenFiles = OpenDirectory.GetFiles("*.png"); //Getting Text files
+                    }
+                    catch
+                    {
+                        MessageBox.Show("Drop in root Folder! NOT files!");
+                        return;
+                    }
+
+                    string addStr = folderPath.Substring(folderPath.LastIndexOf("\\") + 1);
+                    addStr += "/";
+                    ListViewDataCollection.Add(new ListViewData(addStr, folderPath, OpenFiles.Count()));
+                }
+            }
+        }
+
+        private void Btn_creatTrainFile_Click(object sender, RoutedEventArgs e)
+        {
+            StreamWriter sw = new StreamWriter("train.txt", false);
+
+            //each row of listView
+            foreach (ListViewData lv in ListViewDataCollection)
+            {
+                DirectoryInfo OpenDirectory = new DirectoryInfo(lv.realPath);
+                OpenFiles = OpenDirectory.GetFiles("*.png"); //Getting Text files
+                if (tb_preText.Text.LastIndexOf("/") != tb_preText.Text.Count() - 1)
+                    tb_preText.Text += "/";
+                //each row of png in folder
+                foreach (FileInfo fi in OpenFiles)
+                {
+                    sw.WriteLine($"{tb_preText.Text}{lv.Folder}{fi.Name}");
+                }
             }
             sw.Flush();
             sw.Close();
         }
-        private void Btn_creatTrainFile_Click(object sender, RoutedEventArgs e)
+        #endregion \\trainning file//
+
+        private void Btn_openFolder_train_Click(object sender, RoutedEventArgs e)
         {
-            StreamWriter sw = new StreamWriter("train.txt", false);
-            sw.Flush();
-            sw.Close();
+            Process.Start(@".\");
         }
+
+
+        private void Slider_trainninPercent_DataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
+        {
+            Console.WriteLine(Slider_trainninPercent.Value.ToString());
+        }
+
+        private void Slider_trainninPercent_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            Console.WriteLine(Slider_trainninPercent.Value.ToString());
+            int TrainPer = (int)((100 - Slider_trainninPercent.Value));
+
+            if (tb_trainninPercent != null)
+                tb_trainninPercent.Text = $"{TrainPer.ToString()} / {(100 - TrainPer).ToString()}";
+        }
+
+        private void Tb_trainFilePath_PreviewDragOver(object sender, DragEventArgs e)
+        {//textbox Drag會被搶走，所以要拿回來
+            e.Handled = true;
+        }
+        private void Tb_trainFilePath_Drop(object sender, DragEventArgs e)
+        {
+            if (e.Data.GetDataPresent(DataFormats.FileDrop))
+            {
+                string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
+                if (files.Count() > 1)
+                {
+                    MessageBox.Show("one file only");
+                    return;
+                }
+                tb_trainFilePath.Text = files[0];
+
+            }
+        }
+
+
     }
-    #endregion \\trainning file//
     public class LabellingInfo
     {
         public LabellingInfo(int index, Rectangle rect)
@@ -566,19 +642,19 @@ namespace Wpf_labellingTool
         //        return bs;
         //    }
         //}
-
     }
 
     public class ListViewData : INotifyPropertyChanged
     {
         string pre = "";
         string folder;
-
-
-        public ListViewData(string Folder, SolidColorBrush C1 = null, SolidColorBrush C2 = null, SolidColorBrush C3 = null)
+        public string realPath;
+        int count;
+        public ListViewData(string Folder, string RealPath, int Count, SolidColorBrush C1 = null, SolidColorBrush C2 = null, SolidColorBrush C3 = null)
         {
+            realPath = RealPath;
             folder = Folder;
-
+            count = Count;
             if (C1 == null)
                 Color1 = new SolidColorBrush(Colors.Black);
         }
@@ -601,7 +677,15 @@ namespace Wpf_labellingTool
             }
             get { return folder; }
         }
-
+        public int Count
+        {
+            set
+            {
+                count = value;
+                NotifyPropertyChanged("Count");
+            }
+            get { return count; }
+        }
         public SolidColorBrush Color_back
         {
             set
