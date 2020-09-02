@@ -96,6 +96,8 @@ namespace Wpf_labellingTool
             }
 
         }
+
+        //take photo
         private void Btn_openCamera_Click(object sender, RoutedEventArgs e)
         {
             webCam = new VideoCapture(0);
@@ -140,12 +142,33 @@ namespace Wpf_labellingTool
         FileInfo[] OpenFiles;
         int OpenFilesIndex = 0;
         List<LabellingInfo> LabelList = new List<LabellingInfo>();
+
+        //---Load---//
         private void Btn_loadFolder_Click(object sender, RoutedEventArgs e)
         {
             System.Windows.Forms.FolderBrowserDialog path = new System.Windows.Forms.FolderBrowserDialog();
             path.ShowDialog();
-            OpenFolder = path.SelectedPath;
 
+            OpenFolder = path.SelectedPath;
+            LoadFolder();
+        }
+        private void Btn_loadFolder_Drop(object sender, DragEventArgs e)
+        {
+            if (e.Data.GetDataPresent(DataFormats.FileDrop))
+            {
+                string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
+                if (files.Count() > 1)
+                {
+                    MessageBox.Show("one file only");
+                    return;
+                }
+
+                OpenFolder = files[0];
+                LoadFolder();
+            }
+        }
+         void LoadFolder()
+        {
             if (OpenFolder == "")
             {
                 Mode = ShowMode.none;
@@ -167,9 +190,10 @@ namespace Wpf_labellingTool
             //zero something
             OpenFilesIndex = 0;
 
-            Btn_reLoadImage_Click(sender, e);
+            Btn_reLoadImage_Click(null,null);
         }
 
+        //---next image---//
         private void Btn_nextImage_Click(object sender, RoutedEventArgs e)
         {
             OpenFilesIndex++;
@@ -204,7 +228,7 @@ namespace Wpf_labellingTool
             mat_guideLine = new Mat(loadImageSize, DepthType.Cv8U, 3);
             mat_boundBox_tmp = new Mat(loadImageSize, DepthType.Cv8U, 3);
             mat_boundBox = new Mat(loadImageSize, DepthType.Cv8U, 3);
-            if (cb_loadOldLabel.IsChecked == true)
+            if (cb_loadOldLabel.IsChecked == true)//如果要讀已經lebel過的檔案
             {
                 string fileName = OpenFiles[OpenFilesIndex].FullName.Replace(".png", ".txt");
                 if (System.IO.File.Exists(fileName) == true)
@@ -242,9 +266,11 @@ namespace Wpf_labellingTool
                     {
                         //<x_center> <y_center> <width> <height> - float values relative to width and height of image, it can be equal from (0.0 to 1.0]
                         double x_center = (info.boundingbox.X + info.boundingbox.Width / 2.0) / (double)loadImageSize.Width;
+                        if (x_center > 1) x_center = 1; if (x_center < 0) x_center = 0.0001;//防止超過邊線(0,1]
                         double y_center = (info.boundingbox.Y + info.boundingbox.Height / 2.0) / (double)loadImageSize.Height;
-                        double width = ((double)info.boundingbox.Width / (double)loadImageSize.Width);
-                        double height = ((double)info.boundingbox.Height / (double)loadImageSize.Height);
+                        if (y_center > 1) y_center = 1; if (y_center < 0) y_center = 0.0001;//防止超過邊線(0,1]
+                        double width =Math.Abs( ((double)info.boundingbox.Width / (double)loadImageSize.Width));//正負不影響center值(但規定要正值)
+                        double height = Math.Abs(((double)info.boundingbox.Height / (double)loadImageSize.Height));
                         string str = $"{info.Index.ToString()} {x_center.ToString("0.0000")} {y_center.ToString("0.0000")} {width.ToString("0.0000")} {height.ToString("0.0000")}";
 
                         txt.WriteLine(str);
@@ -476,6 +502,12 @@ namespace Wpf_labellingTool
 
         }
 
+
+        private void Btn_openFolder_train_Click(object sender, RoutedEventArgs e)
+        {
+            Process.Start(@".\");
+        }
+
         #region //trainning file\\
         private void Btn_addFloder_Click(object sender, RoutedEventArgs e)
         {
@@ -525,7 +557,8 @@ namespace Wpf_labellingTool
 
         private void Btn_creatTrainFile_Click(object sender, RoutedEventArgs e)
         {
-            StreamWriter sw = new StreamWriter("train.txt", false);
+            //TODO:應該要確認圖片有沒有配合txt 沒有的話就不要加入
+            StreamWriter sw = new StreamWriter("All.txt", false);
 
             //each row of listView
             foreach (ListViewData lv in ListViewDataCollection)
@@ -545,12 +578,7 @@ namespace Wpf_labellingTool
         }
         #endregion \\trainning file//
 
-        private void Btn_openFolder_train_Click(object sender, RoutedEventArgs e)
-        {
-            Process.Start(@".\");
-        }
-
-
+        #region //testing file\\
         private void Slider_trainninPercent_DataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
         {
             Console.WriteLine(Slider_trainninPercent.Value.ToString());
@@ -580,9 +608,41 @@ namespace Wpf_labellingTool
                     return;
                 }
                 tb_trainFilePath.Text = files[0];
-
             }
         }
+
+        private void Btn_creatTest_Click(object sender, RoutedEventArgs e)
+        {
+            string[] allString = System.IO.File.ReadAllLines(tb_trainFilePath.Text);
+            double testPer = Slider_trainninPercent.Value;
+            int gap = (int)(100.0 / testPer);//每隔多少取一個
+
+            StreamWriter sw_train = new StreamWriter("train.txt", false);
+            StreamWriter sw_test = new StreamWriter("test.txt", false);
+
+            int count = 1;
+            for (int L = 0; L < allString.Count(); L++)
+            {
+                if (count == gap)
+                {
+                    sw_test.WriteLine(allString[L]);
+                    count = 1;
+                }
+                else
+                {
+                    sw_train.WriteLine(allString[L]);
+                }
+                count++;
+            }
+
+            sw_train.Flush();
+            sw_train.Close();
+            sw_test.Flush();
+            sw_test.Close();
+        }
+        #endregion \\testing file//
+
+
 
 
     }

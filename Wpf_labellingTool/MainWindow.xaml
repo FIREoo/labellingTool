@@ -28,18 +28,13 @@
                         <ScaleTransform ScaleX="1.25" ScaleY="1.25" />
                     </CheckBox.LayoutTransform>
                 </CheckBox>
-                <CheckBox x:Name="cb_threadShow" Content="Thread Show" HorizontalAlignment="Left" Margin="-565,-19,0,0" VerticalAlignment="Top" FontSize="14" Click="Cb_threadShow_Click">
-                    <CheckBox.LayoutTransform>
-                        <ScaleTransform ScaleX="1.25" ScaleY="1.25" />
-                    </CheckBox.LayoutTransform>
-                </CheckBox>
             </Grid>
         </GroupBox>
         <Grid HorizontalAlignment="Left" Height="31" Margin="660,495,0,0" VerticalAlignment="Top" Width="332" Background="#FFFF6464"/>
         <TabControl HorizontalAlignment="Left" Height="327" Margin="660,168,0,0" VerticalAlignment="Top" Width="381" FontSize="20">
             <TabItem Header="Labelling">
                 <Grid Background="#FFE5E5E5">
-                    <Button x:Name="btn_loadFolder" Content="Load Folder" HorizontalAlignment="Left" Margin="14,13,0,0" VerticalAlignment="Top" Width="132" Click="Btn_loadFolder_Click" Height="43"/>
+                    <Button x:Name="btn_loadFolder" Content="Load Folder" AllowDrop="True" HorizontalAlignment="Left" Margin="14,13,0,0" VerticalAlignment="Top" Width="132" Click="Btn_loadFolder_Click" Height="43" Drop="Btn_loadFolder_Drop"/>
                     <Label x:Name="lb_selectLoadFolder" Content="Load Path : " HorizontalAlignment="Left" Margin="14,56,0,0" VerticalAlignment="Top" FontSize="14"/>
                     <Label x:Name="lb_loadImage" Content="Load Image : " HorizontalAlignment="Left" Margin="14,80,0,0" VerticalAlignment="Top" FontSize="18"/>
                     <Button x:Name="btn_nextImage" Content="Next (D)" HorizontalAlignment="Left" Margin="98,113,0,0" VerticalAlignment="Top" Width="108" RenderTransformOrigin="0.545,0.724" Click="Btn_nextImage_Click" Height="43"/>
@@ -144,14 +139,20 @@
             </TabItem>
             <TabItem   Header="Text config">
                 <Grid Background="#FFE5E5E5">
-                    <TextBox x:Name="tb_trainFilePath" HorizontalAlignment="Left" VerticalContentAlignment="Center" Height="35" Margin="10,10,0,0" TextWrapping="Wrap" AllowDrop="True" Text="Drop in train.txt" VerticalAlignment="Top" Width="355" Drop="Tb_trainFilePath_Drop" PreviewDragOver="Tb_trainFilePath_PreviewDragOver" FontSize="16"/>
+                    <TextBox x:Name="tb_trainFilePath" HorizontalAlignment="Left" VerticalContentAlignment="Center" Height="35" Margin="10,10,0,0" TextWrapping="Wrap" AllowDrop="True" Text="Drop in All.txt" VerticalAlignment="Top" Width="355" Drop="Tb_trainFilePath_Drop" PreviewDragOver="Tb_trainFilePath_PreviewDragOver" FontSize="16"/>
                     <Slider x:Name="Slider_trainninPercent" HorizontalAlignment="Left" Margin="10,45,0,0" VerticalAlignment="Top" Width="220" SmallChange="5" Value="20" DataContextChanged="Slider_trainninPercent_DataContextChanged" ValueChanged="Slider_trainninPercent_ValueChanged" Maximum="100" LargeChange="5" TickFrequency="10" TickPlacement="Both"/>
                     <TextBlock HorizontalAlignment="Left" Margin="10,72,0,0" TextWrapping="Wrap" Text="Train" VerticalAlignment="Top"/>
                     <TextBlock HorizontalAlignment="Left" Margin="191,72,0,0" TextWrapping="Wrap" Text="Test" VerticalAlignment="Top"/>
                     <TextBlock x:Name="tb_trainninPercent" HorizontalAlignment="Left" Margin="91,72,0,0" TextWrapping="Wrap" Text="80 / 20" VerticalAlignment="Top"/>
+                    <Button x:Name="btn_creatTest" Content="Creat test.txt" HorizontalAlignment="Left" Margin="10,102,0,0" VerticalAlignment="Top" Width="146" Click="Btn_creatTest_Click"/>
                 </Grid>
             </TabItem>
         </TabControl>
+        <CheckBox x:Name="cb_threadShow" Content="Thread Show" HorizontalAlignment="Left" Margin="95,15,0,0" VerticalAlignment="Top" FontSize="14" Click="Cb_threadShow_Click">
+            <CheckBox.LayoutTransform>
+                <ScaleTransform ScaleX="1.25" ScaleY="1.25" />
+            </CheckBox.LayoutTransform>
+        </CheckBox>
 
     </Grid>
 </Window>
