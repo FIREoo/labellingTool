@@ -570,7 +570,8 @@ namespace Wpf_labellingTool
                 //each row of png in folder
                 foreach (FileInfo fi in OpenFiles)
                 {
-                    sw.WriteLine($"{tb_preText.Text}{lv.Folder}{fi.Name}");
+                    if (File.Exists(fi.FullName.Replace(".png", ".txt")) == true)
+                        sw.WriteLine($"{tb_preText.Text}{lv.Folder}{fi.Name}");
                 }
             }
             sw.Flush();
@@ -641,8 +642,6 @@ namespace Wpf_labellingTool
             sw_test.Close();
         }
         #endregion \\testing file//
-
-
 
 
     }
