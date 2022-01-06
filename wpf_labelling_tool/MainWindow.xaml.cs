@@ -27,14 +27,11 @@ using System.ComponentModel;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 
-namespace Wpf_labellingTool
+namespace wpf_labelling_tool
 {
-    /// <summary>
-    /// MainWindow.xaml 的互動邏輯
-    /// </summary>
     public partial class MainWindow : Window
     {
-        Mat mat_show;//= new Mat(480, 640, DepthType.Cv8U, 3);
+        Mat mat_show = new Mat();//= new Mat(480, 640, DepthType.Cv8U, 3);
 
         VideoCapture webCam;
         Mat mat_cam = new Mat(480, 640, DepthType.Cv8U, 3);
@@ -47,16 +44,7 @@ namespace Wpf_labellingTool
         System.Drawing.Size loadImageSize = new System.Drawing.Size();
 
         static ObservableCollection<ListViewData> ListViewDataCollection = new ObservableCollection<ListViewData>();
-        public MainWindow()
-        {
-            InitializeComponent();
-            lv_tranningList.ItemsSource = ListViewDataCollection;
-            //DispatcherTimer _timer = new DispatcherTimer();
-            //_timer.Interval = TimeSpan.FromMilliseconds(50);
-            //_timer.Tick += timeCycle;
-            //_timer.Start();
-        }
-        #region unUse
+
         enum ShowMode
         {
             none = 0,
@@ -65,6 +53,21 @@ namespace Wpf_labellingTool
             file = 3
         }
         ShowMode Mode = ShowMode.none;
+
+        public MainWindow()
+        {
+            InitializeComponent();
+            lv_tranningList.ItemsSource = ListViewDataCollection;
+            //DispatcherTimer _timer = new DispatcherTimer();
+            //_timer.Interval = TimeSpan.FromMilliseconds(50);
+            //_timer.Tick += timeCycle;
+            //_timer.Start();
+            Mat black = new Mat(480, 640, DepthType.Cv8U, 3);
+            setToZero(ref black);
+            img_main.Source = BitmapSourceConvert.MatToBitmap(black);
+        }
+        #region unUse
+
         public void timeCycle(object sender, EventArgs e)
         {
             if (Mode == ShowMode.none)
@@ -88,6 +91,8 @@ namespace Wpf_labellingTool
         {
             if (alreadyHandle == false)
             {
+                if (mat_show == null || mat_LoadImage == null)
+                    return;
                 mat_LoadImage.CopyTo(mat_show);
                 mat_show.AddLayer(mat_boundBox);
                 mat_show.AddLayer(mat_boundBox_tmp);
@@ -97,35 +102,65 @@ namespace Wpf_labellingTool
 
         }
 
-        //take photo
+        //Capture
         private void Btn_openCamera_Click(object sender, RoutedEventArgs e)
         {
-            webCam = new VideoCapture(0);
+            int index = int.Parse(tb_open_index.Text);
+            webCam = new VideoCapture(index);
             liveLoop = true;
-
+            int si = 0;//4:3
+            if (rb_cam_scale_169.IsChecked == true)
+                si = 1;
+            else if (rb_cam_scale_43.IsChecked == true)
+                si = 0;
+            MessageBox.Show($"Camera Capture:{webCam.Width}x{webCam.Height}");
+            Mode = ShowMode.camera;
             Task.Run(() =>
             {
                 Mode = ShowMode.camera;
                 while (liveLoop)
                 {
                     mat_cam = webCam.QueryFrame();
-
+                    if (si == 0)
+                    {
+                        CvInvoke.Resize(mat_cam, mat_show, new System.Drawing.Size(640, 480));
+                    }
+                    else if (si == 1)
+                    {
+                        CvInvoke.Resize(mat_cam, mat_show, new System.Drawing.Size(640, 360));
+                        Mat blank;
+                        blank = Mat.Zeros(120, 640, DepthType.Cv8U, 3);
+                        CvInvoke.VConcat(mat_show, blank, mat_show);
+                    }
                     this.Dispatcher.Invoke((Action)(() =>
                     {
-                        img_main.Source = BitmapSourceConvert.MatToBitmap(mat_cam);
+                        img_main.Source = BitmapSourceConvert.MatToBitmap(mat_show);
                     }));
                 }
             });
         }
-
+        private void Btn_stop_cam_Click(object sender, RoutedEventArgs e)
+        {
+            liveLoop = false;
+            Mat black = new Mat(480, 640, DepthType.Cv8U, 3);
+            setToZero(ref black);
+            img_main.Source = BitmapSourceConvert.MatToBitmap(black);
+            Mode = ShowMode.none;
+        }
         private void Btn_saveImage_Click(object sender, RoutedEventArgs e)
         {
-            //File.Exists(curFile)
+            //確認有沒有資料夾
             string folder = tb_saveImage_folder.Text;
             if (!Directory.Exists(folder))
                 Directory.CreateDirectory(folder);
 
-            CvInvoke.Imwrite($"{folder}//{tb_saveImage_pretext.Text}{tb_saveImage_count.Text}.png", mat_show);
+            Mat mat_save = new Mat();
+            mat_cam.CopyTo(mat_save);
+            if (cb_threadShow.IsChecked == true)
+            {
+                CvInvoke.Resize(mat_save, mat_save, new System.Drawing.Size(int.Parse(tb_saveSize_width.Text), int.Parse(tb_saveSize_height.Text)));
+            }
+            CvInvoke.Imwrite($"{folder}//{tb_saveImage_pretext.Text}{tb_saveImage_count.Text}.png", mat_save);
             tb_saveImage_count.Text = (int.Parse(tb_saveImage_count.Text) + 1).ToString();
         }
         private static readonly System.Text.RegularExpressions.Regex _regex = new System.Text.RegularExpressions.Regex("[^0-9.-]+"); //regex that matches disallowed text
@@ -167,7 +202,7 @@ namespace Wpf_labellingTool
                 LoadFolder();
             }
         }
-         void LoadFolder()
+        void LoadFolder()
         {
             if (OpenFolder == "")
             {
@@ -190,7 +225,7 @@ namespace Wpf_labellingTool
             //zero something
             OpenFilesIndex = 0;
 
-            Btn_reLoadImage_Click(null,null);
+            Btn_reLoadImage_Click(null, null);
         }
 
         //---next image---//
@@ -269,7 +304,7 @@ namespace Wpf_labellingTool
                         if (x_center > 1) x_center = 1; if (x_center < 0) x_center = 0.0001;//防止超過邊線(0,1]
                         double y_center = (info.boundingbox.Y + info.boundingbox.Height / 2.0) / (double)loadImageSize.Height;
                         if (y_center > 1) y_center = 1; if (y_center < 0) y_center = 0.0001;//防止超過邊線(0,1]
-                        double width =Math.Abs( ((double)info.boundingbox.Width / (double)loadImageSize.Width));//正負不影響center值(但規定要正值)
+                        double width = Math.Abs(((double)info.boundingbox.Width / (double)loadImageSize.Width));//正負不影響center值(但規定要正值)
                         double height = Math.Abs(((double)info.boundingbox.Height / (double)loadImageSize.Height));
                         string str = $"{info.Index.ToString()} {x_center.ToString("0.0000")} {y_center.ToString("0.0000")} {width.ToString("0.0000")} {height.ToString("0.0000")}";
 
@@ -328,6 +363,9 @@ namespace Wpf_labellingTool
             }
 
         }
+
+
+
 
         #region //---key---\\
         private void Grid_MouseEnter(object sender, MouseEventArgs e)
@@ -397,6 +435,17 @@ namespace Wpf_labellingTool
         BoundBox boundtype = BoundBox.none;
         Point mousePress = new Point();
         Point mouseRelease = new Point();
+        List<System.Windows.Shapes.Rectangle> labellingRectList;
+        System.Windows.Shapes.Rectangle dragRect;
+        public void CreatLabellingRect()
+        {
+
+        }
+        public void UpdateLabellingRect()
+        {
+
+        }
+
         private void Img_main_MouseDown(object sender, MouseButtonEventArgs e)
         {
             mousePoint = new Point((int)e.GetPosition((IInputElement)sender).X, (int)e.GetPosition((IInputElement)sender).Y);
@@ -405,13 +454,28 @@ namespace Wpf_labellingTool
             {
                 if (Mode == ShowMode.file)//避免在攝影機模式下使用labeling
                 {
+                    boundtype = BoundBox.mouseDown;
+                    //ImageUpdate(threadLoop);
+                    dragRect = new System.Windows.Shapes.Rectangle();
+                    dragRect.Stroke = new SolidColorBrush(Color.FromRgb(209, 166, 53));
+                    dragRect.StrokeThickness = 3;
+                    dragRect.HorizontalAlignment = HorizontalAlignment.Left;
+                    dragRect.VerticalAlignment = VerticalAlignment.Top;
+                    dragRect.Margin = new Thickness(mousePress.X, mousePress.Y, 0, 0);
+                    dragRect.Height = 0;
+                    dragRect.Width = 0;
+
                     if (boundtype == BoundBox.set)//如果已經是set狀態(上一個沒有label完成)，就要重新刪掉上個未完成的框
                     {
-                        LabelList.Remove(LabelList.Last());
-                        DrawLabellingBox();
+                        //LabelList.Remove(LabelList.Last());
+                        //DrawLabellingBox();
                     }
-                    boundtype = BoundBox.mouseDown;
-                    ImageUpdate(threadLoop);
+                    else
+                    {
+                        grid_image.Children.Add(dragRect);
+                    }
+
+
                 }
             }
             else if (e.ChangedButton == MouseButton.Right)
@@ -441,6 +505,7 @@ namespace Wpf_labellingTool
                 //draw boundBox
                 DrawLabellingBox();
                 ImageUpdate(threadLoop);
+      
             }
         }
 
@@ -448,20 +513,44 @@ namespace Wpf_labellingTool
         {
             mousePoint = new Point((int)e.GetPosition((IInputElement)sender).X, (int)e.GetPosition((IInputElement)sender).Y);
 
+            line_x1.X1 = 0;
+            line_x1.Y1 = mousePoint.Y;
+            line_x1.X2 = mousePoint.X - 5;
+            line_x1.Y2 = mousePoint.Y;
+            line_x2.X1 = mousePoint.X + 5;
+            line_x2.Y1 = mousePoint.Y;
+            line_x2.X2 = 640;
+            line_x2.Y2 = mousePoint.Y;
+
+            line_y1.X1 = mousePoint.X;
+            line_y1.Y1 = 0;
+            line_y1.X2 = mousePoint.X;
+            line_y1.Y2 = mousePoint.Y - 5;
+            line_y2.X1 = mousePoint.X;
+            line_y2.Y1 = mousePoint.Y + 5;
+            line_y2.X2 = mousePoint.X;
+            line_y2.Y2 = 480;
+
+
+
             if (Mode == ShowMode.file)
             {
-                mat_guideLine = new Mat(loadImageSize, DepthType.Cv8U, 3);
-                CvInvoke.Line(mat_guideLine, new Point(0, mousePoint.Y), new Point(loadImageSize.Width, mousePoint.Y), new MCvScalar(50, 50, 230));
-                CvInvoke.Line(mat_guideLine, new Point(mousePoint.X, 0), new Point(mousePoint.X, loadImageSize.Height), new MCvScalar(50, 50, 230));
+                //mat_guideLine = new Mat(loadImageSize, DepthType.Cv8U, 3);
+                //CvInvoke.Line(mat_guideLine, new Point(0, mousePoint.Y), new Point(loadImageSize.Width, mousePoint.Y), new MCvScalar(50, 50, 230));
+                //CvInvoke.Line(mat_guideLine, new Point(mousePoint.X, 0), new Point(mousePoint.X, loadImageSize.Height), new MCvScalar(50, 50, 230));
 
                 if (boundtype == BoundBox.mouseDown)
                 {
                     mat_boundBox_tmp = new Mat(loadImageSize, DepthType.Cv8U, 3);
-                    Rectangle rect = new Rectangle(mousePress.X, mousePress.Y, mousePoint.X - mousePress.X, mousePoint.Y - mousePress.Y);
-                    CvInvoke.Rectangle(mat_boundBox_tmp, rect, new MCvScalar(100, 200, 255), 2);
+
+                    //Rectangle rect = new Rectangle(mousePress.X, mousePress.Y, mousePoint.X - mousePress.X, mousePoint.Y - mousePress.Y);
+                    //CvInvoke.Rectangle(mat_boundBox_tmp, rect, new MCvScalar(100, 200, 255), 2);
+                    dragRect.Margin = new Thickness(mousePress.X, mousePress.Y, 0, 0);
+                    dragRect.Height = Math.Abs(mousePoint.Y - mousePress.Y);
+                    dragRect.Width = Math.Abs(mousePoint.X - mousePress.X);
                 }
             }
-            ImageUpdate(threadLoop);
+            //ImageUpdate(threadLoop);
         }
 
         #endregion \\---image mouse---//
@@ -641,6 +730,7 @@ namespace Wpf_labellingTool
             sw_test.Flush();
             sw_test.Close();
         }
+
         #endregion \\testing file//
 
 
@@ -788,6 +878,11 @@ namespace Wpf_labellingTool
             CvInvoke.Imwrite($"thres.png", mask);
             ((Mat)upLayer).CopyTo(baseImg, mask);
             CvInvoke.Imwrite($"out.png", baseImg);
+        }
+        public static void setToZero(ref Mat mat)
+        {
+            byte[] value = new byte[mat.Rows * mat.Cols * mat.ElementSize];
+            Marshal.Copy(value, 0, mat.DataPointer, mat.Rows * mat.Cols * mat.ElementSize);
         }
     }
 
