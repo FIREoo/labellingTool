@@ -10,11 +10,16 @@
         <Button x:Name="btn_openCamera" Content="Open cam" HorizontalAlignment="Left" Margin="15,10,0,0" VerticalAlignment="Top" Width="75" Height="31" Click="Btn_openCamera_Click"/>
 
         <Grid x:Name="grid_image" HorizontalAlignment="Left" Height="480" Margin="15,46,0,0" VerticalAlignment="Top" Width="640" Background="Black" MouseEnter="Grid_MouseEnter" MouseLeave="Grid_MouseLeave">
-            <Image x:Name="img_main" HorizontalAlignment="Left" Height="480" VerticalAlignment="Top" Width="640" Cursor="Cross" MouseDown="Img_main_MouseDown" MouseUp="Img_main_MouseUp" MouseMove="Img_main_MouseMove"/>
+            <Image x:Name="img_main" HorizontalAlignment="Left" Height="480" VerticalAlignment="Top" Width="640" />
             <Line x:Name="line_x1"  X1="0" Y1="0"    X2="640" Y2="0"    Stroke="#FFFF2323"    StrokeThickness="1" />
             <Line x:Name="line_x2"  X1="0" Y1="0"    X2="640" Y2="0"    Stroke="#FFFF2323"    StrokeThickness="1" />
             <Line x:Name="line_y1"  X1="0" Y1="0"    X2="0" Y2="480"    Stroke="#FFFF2323"    StrokeThickness="1" />
             <Line x:Name="line_y2"  X1="0" Y1="0"    X2="0" Y2="480"    Stroke="#FFFF2323"    StrokeThickness="1" />
+            <Line x:Name="line_box_t"  X1="0" Y1="0"    X2="0" Y2="0"    Stroke="#FFE2A31B"    StrokeThickness="2" StrokeDashArray="2, 1"/>
+            <Line x:Name="line_box_b"  X1="0" Y1="0"    X2="0" Y2="0"    Stroke="#FFE2A31B"    StrokeThickness="2" StrokeDashArray="2, 1"/>
+            <Line x:Name="line_box_l"  X1="0" Y1="0"    X2="0" Y2="0"    Stroke="#FFE2A31B"    StrokeThickness="2" StrokeDashArray="2, 1" />
+            <Line x:Name="line_box_r"  X1="0" Y1="0"    X2="0" Y2="0"    Stroke="#FFE2A31B"    StrokeThickness="2" StrokeDashArray="2, 1"/>
+            <Grid x:Name="grid_img_click_mask" HorizontalAlignment="Left" Height="480" VerticalAlignment="Top" Width="640" Cursor="Cross" MouseDown="Img_main_MouseDown" MouseUp="Img_main_MouseUp" MouseMove="Img_main_MouseMove" Background="#02000000"/>
         </Grid>
         <Grid HorizontalAlignment="Left" Height="31" Margin="660,495,0,0" VerticalAlignment="Top" Width="332" Background="#FFFF6464"/>
         <TabControl HorizontalAlignment="Left" Height="327" Margin="429,573,0,0" VerticalAlignment="Top" Width="381" FontSize="20">
@@ -82,6 +87,7 @@
                         </CheckBox.LayoutTransform>
                     </CheckBox>
                     <Button x:Name="btn_clearLabel" Content="Clear (C)" HorizontalAlignment="Left" Margin="123,169,0,0" VerticalAlignment="Top" Width="108" RenderTransformOrigin="0.545,0.724" Click="Btn_clearLabel_Click"/>
+                    <Button Content="Button" HorizontalAlignment="Left" Margin="11,262,0,0" VerticalAlignment="Top" Width="75" Click="Button_Click"/>
                 </Grid>
             </TabItem>
             <TabItem Header="Tranning">
@@ -173,7 +179,7 @@
             <RadioButton x:Name="rb_cam_scale_169" Content="16:9" HorizontalAlignment="Left" Margin="63,7,0,0" VerticalAlignment="Top"/>
         </Grid>
         <Button x:Name="btn_stop_cam" Content="Stop cam" HorizontalAlignment="Left" Margin="237,10,0,0" VerticalAlignment="Top" Width="75" Height="31" Click="Btn_stop_cam_Click"/>
-        <Grid x:Name="Grid_1" HorizontalAlignment="Left" Height="170" Margin="90,573,0,0" VerticalAlignment="Top" Width="173" Background="#FFD1A635"/>
+        <Grid x:Name="Grid_1" HorizontalAlignment="Left" Height="170" Margin="90,573,0,0" VerticalAlignment="Top" Width="173" Background="#FFF0C553"/>
 
     </Grid>
 

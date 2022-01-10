@@ -403,7 +403,6 @@ namespace wpf_labelling_tool
                         else
                             MessageBox.Show("Please enter the label or cancle");
                     }
-
                 }
                 else if (boundtype == BoundBox.done || boundtype == BoundBox.none)//hot key
                 {
@@ -436,7 +435,45 @@ namespace wpf_labelling_tool
         Point mousePress = new Point();
         Point mouseRelease = new Point();
         List<System.Windows.Shapes.Rectangle> labellingRectList;
-        System.Windows.Shapes.Rectangle dragRect;
+        System.Windows.Shapes.Rectangle setRect;
+
+        public void ClearDragRect()
+        {
+            line_box_t.X1 = 0; line_box_t.Y1 = 0; line_box_t.X2 = 0; line_box_t.Y2 = 0;
+            line_box_l.X1 = 0; line_box_l.Y1 = 0; line_box_l.X2 = 0; line_box_l.Y2 = 0;
+            line_box_b.X1 = 0; line_box_b.Y1 = 0; line_box_b.X2 = 0; line_box_b.Y2 = 0;
+            line_box_r.X1 = 0; line_box_r.Y1 = 0; line_box_r.X2 = 0; line_box_r.Y2 = 0;
+        }
+        public void ClearSetRect()
+        {
+            grid_image.Children.Remove(setRect);
+        }
+        public void ShowLabellingRect()
+        {
+            foreach (LabellingInfo info in LabelList)
+            {
+                if (info.Index >= 0)
+                {
+                    System.Windows.Shapes.Rectangle rect;
+                    rect = new System.Windows.Shapes.Rectangle();
+                    rect.Stroke = new SolidColorBrush(Color.FromRgb(240, 179, 83));
+                    rect.StrokeThickness = 2;
+                    rect.HorizontalAlignment = HorizontalAlignment.Left;
+                    rect.VerticalAlignment = VerticalAlignment.Top;
+                    rect.Margin = new Thickness(info.boundingbox.X, info.boundingbox.Y, 0, 0);
+                    rect.Height = info.boundingbox.Height;
+                    rect.Width = info.boundingbox.Width;
+                    grid_image.Children.Add(rect);
+                    Console.WriteLine("draw rect");
+                    //CvInvoke.Rectangle(mat_boundBox, info.boundingbox, new MCvScalar(100, 200, 110), 2);
+                    //CvInvoke.PutText(mat_boundBox, $"[{info.Index.ToString()}]", info.boundingbox.Location, FontFace.HersheySimplex, 0.5, new MCvScalar(100, 200, 110), 1);
+                }
+                else//代表沒有定義index過
+                {
+                    //CvInvoke.Rectangle(mat_boundBox_tmp, info.boundingbox, new MCvScalar(100, 150, 255), 2);
+                }
+            }
+        }
         public void CreatLabellingRect()
         {
 
@@ -455,60 +492,22 @@ namespace wpf_labelling_tool
                 if (Mode == ShowMode.file)//避免在攝影機模式下使用labeling
                 {
                     boundtype = BoundBox.mouseDown;
-                    //ImageUpdate(threadLoop);
-                    dragRect = new System.Windows.Shapes.Rectangle();
-                    dragRect.Stroke = new SolidColorBrush(Color.FromRgb(209, 166, 53));
-                    dragRect.StrokeThickness = 3;
-                    dragRect.HorizontalAlignment = HorizontalAlignment.Left;
-                    dragRect.VerticalAlignment = VerticalAlignment.Top;
-                    dragRect.Margin = new Thickness(mousePress.X, mousePress.Y, 0, 0);
-                    dragRect.Height = 0;
-                    dragRect.Width = 0;
-
+                    ClearDragRect();
+                    ClearSetRect();
                     if (boundtype == BoundBox.set)//如果已經是set狀態(上一個沒有label完成)，就要重新刪掉上個未完成的框
                     {
-                        //LabelList.Remove(LabelList.Last());
-                        //DrawLabellingBox();
+                        LabelList.Remove(LabelList.Last());
                     }
-                    else
-                    {
-                        grid_image.Children.Add(dragRect);
-                    }
-
-
                 }
             }
             else if (e.ChangedButton == MouseButton.Right)
             {
                 CleanLabel();
                 DrawLabellingBox();
-                ImageUpdate(threadLoop);
+                //ImageUpdate(threadLoop);
             }
 
         }
-        private void Img_main_MouseUp(object sender, MouseButtonEventArgs e)
-        {
-            mousePoint = new Point((int)e.GetPosition((IInputElement)sender).X, (int)e.GetPosition((IInputElement)sender).Y);
-            mouseRelease = mousePoint;
-            if (Mode == ShowMode.file)
-            {
-                boundtype = BoundBox.set;
-                Rectangle rect = new Rectangle(mousePress.X, mousePress.Y, mouseRelease.X - mousePress.X, mouseRelease.Y - mousePress.Y);
-                LabelList.Add(new LabellingInfo(-1, rect));
-
-                if (cb_lockIndex.IsChecked == true)//如果有lock index
-                {
-                    LabelList.Last().Index = int.Parse(tb_lockIndex.Text);
-                    boundtype = BoundBox.done;
-                }
-
-                //draw boundBox
-                DrawLabellingBox();
-                ImageUpdate(threadLoop);
-      
-            }
-        }
-
         private void Img_main_MouseMove(object sender, MouseEventArgs e)
         {
             mousePoint = new Point((int)e.GetPosition((IInputElement)sender).X, (int)e.GetPosition((IInputElement)sender).Y);
@@ -545,14 +544,95 @@ namespace wpf_labelling_tool
 
                     //Rectangle rect = new Rectangle(mousePress.X, mousePress.Y, mousePoint.X - mousePress.X, mousePoint.Y - mousePress.Y);
                     //CvInvoke.Rectangle(mat_boundBox_tmp, rect, new MCvScalar(100, 200, 255), 2);
-                    dragRect.Margin = new Thickness(mousePress.X, mousePress.Y, 0, 0);
-                    dragRect.Height = Math.Abs(mousePoint.Y - mousePress.Y);
-                    dragRect.Width = Math.Abs(mousePoint.X - mousePress.X);
+                    //dragRect.Margin = new Thickness(mousePress.X, mousePress.Y, 0, 0);
+                    //dragRect.Height = Math.Abs(mousePoint.Y - mousePress.Y);
+                    //dragRect.Width = Math.Abs(mousePoint.X - mousePress.X);
+                    line_box_t.X1 = mousePress.X;
+                    line_box_t.Y1 = mousePress.Y;
+                    line_box_t.X2 = mousePoint.X;
+                    line_box_t.Y2 = mousePress.Y;
+
+                    line_box_l.X1 = mousePress.X;
+                    line_box_l.Y1 = mousePress.Y;
+                    line_box_l.X2 = mousePress.X;
+                    line_box_l.Y2 = mousePoint.Y;
+
+                    line_box_b.X1 = mousePress.X;
+                    line_box_b.Y1 = mousePoint.Y;
+                    line_box_b.X2 = mousePoint.X;
+                    line_box_b.Y2 = mousePoint.Y;
+
+                    line_box_r.X1 = mousePoint.X;
+                    line_box_r.Y1 = mousePress.Y;
+                    line_box_r.X2 = mousePoint.X;
+                    line_box_r.Y2 = mousePoint.Y;
+
+                    if (mousePress.X < mousePoint.X)
+                        line_box_b.X2 -= 2;
+                    else if (mousePress.X > mousePoint.X)
+                        line_box_b.X2 += 2;
+
+                    if (mousePress.Y < mousePoint.Y)
+                        line_box_r.Y2 -= 2;
+                    else if (mousePress.Y > mousePoint.Y)
+                        line_box_r.Y2 += 2;
                 }
             }
             //ImageUpdate(threadLoop);
         }
 
+        private void Img_main_MouseUp(object sender, MouseButtonEventArgs e)
+        {
+            mousePoint = new Point((int)e.GetPosition((IInputElement)sender).X, (int)e.GetPosition((IInputElement)sender).Y);
+            mouseRelease = mousePoint;
+            if (Mode == ShowMode.file)
+            {
+                boundtype = BoundBox.set;
+
+                //新增到labbling box裡面
+                Rectangle rect = new Rectangle(mousePress.X, mousePress.Y, mouseRelease.X - mousePress.X, mouseRelease.Y - mousePress.Y);
+                if (rect.Width < 0)
+                {
+                    rect.X = mouseRelease.X;
+                    rect.Width = Math.Abs(rect.Width);
+                }
+                if (rect.Height < 0)
+                {
+                    rect.Y = mouseRelease.Y;
+                    rect.Height = Math.Abs(rect.Height);
+                }
+                
+
+                ClearDragRect();
+                setRect = new System.Windows.Shapes.Rectangle();
+                setRect.Stroke = new SolidColorBrush(Color.FromRgb(240, 179, 83));
+                setRect.StrokeThickness = 2;
+                setRect.HorizontalAlignment = HorizontalAlignment.Left;
+                setRect.VerticalAlignment = VerticalAlignment.Top;
+                setRect.Margin = new Thickness(rect.X, rect.Y, 0, 0);
+                setRect.Height = rect.Height;
+                setRect.Width = rect.Width;
+                grid_image.Children.Add(setRect);
+
+                if (cb_lockIndex.IsChecked == true)//如果有lock index
+                {
+                    LabelList.Add(new LabellingInfo(-1, rect));
+                    LabelList.Last().Index = int.Parse(tb_lockIndex.Text);
+                    boundtype = BoundBox.done;
+                }
+                //ShowLabellingRect();
+
+                //draw boundBox
+                //DrawLabellingBox();
+                //ImageUpdate(threadLoop);
+
+            }
+        }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            ShowLabellingRect();
+        }
         #endregion \\---image mouse---//
 
         public static void setToZero(ref Mat mat)
@@ -731,9 +811,10 @@ namespace wpf_labelling_tool
             sw_test.Close();
         }
 
+
         #endregion \\testing file//
 
-
+   
     }
     public class LabellingInfo
     {
