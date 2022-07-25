@@ -27,36 +27,23 @@ using System.ComponentModel;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 
-namespace Wpf_labellingTool
+namespace wpf_labelling_tool
 {
-    /// <summary>
-    /// MainWindow.xaml 的互動邏輯
-    /// </summary>
     public partial class MainWindow : Window
     {
-        Mat mat_show;//= new Mat(480, 640, DepthType.Cv8U, 3);
+        Mat mat_show = new Mat();//= new Mat(480, 640, DepthType.Cv8U, 3);
 
         VideoCapture webCam;
         Mat mat_cam = new Mat(480, 640, DepthType.Cv8U, 3);
         bool liveLoop = false;
 
         Mat mat_LoadImage;//= new Mat(480, 640, DepthType.Cv8U, 3);
-        Mat mat_guideLine;// = new Mat(480, 640, DepthType.Cv8U, 3);
-        Mat mat_boundBox;//= new Mat(480, 640, DepthType.Cv8U, 3);
+
         Mat mat_boundBox_tmp;// = new Mat(480, 640, DepthType.Cv8U, 3);
         System.Drawing.Size loadImageSize = new System.Drawing.Size();
 
         static ObservableCollection<ListViewData> ListViewDataCollection = new ObservableCollection<ListViewData>();
-        public MainWindow()
-        {
-            InitializeComponent();
-            lv_tranningList.ItemsSource = ListViewDataCollection;
-            //DispatcherTimer _timer = new DispatcherTimer();
-            //_timer.Interval = TimeSpan.FromMilliseconds(50);
-            //_timer.Tick += timeCycle;
-            //_timer.Start();
-        }
-        #region unUse
+
         enum ShowMode
         {
             none = 0,
@@ -65,67 +52,166 @@ namespace Wpf_labellingTool
             file = 3
         }
         ShowMode Mode = ShowMode.none;
-        public void timeCycle(object sender, EventArgs e)
+
+        double RealScale = 1;
+
+        public MainWindow()
         {
-            if (Mode == ShowMode.none)
-            {
+            InitializeComponent();
+            lv_tranningList.ItemsSource = ListViewDataCollection;
 
-            }
-            else if (Mode == ShowMode.camera)
-            {
+            Mat black = new Mat(480, 640, DepthType.Cv8U, 3);
+            setToZero(ref black);
+            img_main.Source = BitmapSourceConvert.MatToBitmap(black);
 
-            }
-            else if (Mode == ShowMode.file)
-            {
-                mat_LoadImage.CopyTo(mat_show);
-                mat_show.AddLayer(mat_guideLine);
-                img_main.Source = BitmapSourceConvert.MatToBitmap(mat_show);
-                Console.WriteLine("tick");
-            }
+            //combobox resolution
+            List<string> resolution_items = new List<string>();
+            resolution_items.Add("320x240");
+            resolution_items.Add("640x480");
+            resolution_items.Add("960x720");
+            resolution_items.Add("1280x960");
+            resolution_items.Add("1600x1200");
+            combo_resolution.ItemsSource = resolution_items;
+            combo_resolution.Text = "1280x960";
         }
+        #region unUse
+
+        //public void timeCycle(object sender, EventArgs e)
+        //{
+        //    if (Mode == ShowMode.none)
+        //    {
+
+        //    }
+        //    else if (Mode == ShowMode.camera)
+        //    {
+
+        //    }
+        //    else if (Mode == ShowMode.file)
+        //    {
+        //        mat_LoadImage.CopyTo(mat_show);
+        //        mat_show.AddLayer(mat_guideLine);
+        //        img_main.Source = BitmapSourceConvert.MatToBitmap(mat_show);
+        //        Console.WriteLine("tick");
+        //    }
+        //}  
+        //private void ImageUpdate(bool alreadyHandle)
+        //{
+        //    if (alreadyHandle == false)
+        //    {
+        //        if (mat_show == null || mat_LoadImage == null)
+        //            return;
+        //        mat_LoadImage.CopyTo(mat_show);
+        //        mat_show.AddLayer(mat_boundBox);
+        //        mat_show.AddLayer(mat_boundBox_tmp);
+        //        mat_show.AddLayer(mat_guideLine);
+        //        img_main.Source = BitmapSourceConvert.MatToBitmap(mat_show);
+        //    }
+
+        //}
+
+        //Capture
         #endregion unUse
-        private void ImageUpdate(bool alreadyHandle)
+   
+        private void rb_cam_scale_Click(object sender, RoutedEventArgs e)
         {
-            if (alreadyHandle == false)
+            RadioButton cb = (RadioButton)sender;
+            List<string> resolution_items = new List<string>();
+            if ((string)cb.Content == "4:3")
             {
-                mat_LoadImage.CopyTo(mat_show);
-                mat_show.AddLayer(mat_boundBox);
-                mat_show.AddLayer(mat_boundBox_tmp);
-                mat_show.AddLayer(mat_guideLine);
-                img_main.Source = BitmapSourceConvert.MatToBitmap(mat_show);
+                resolution_items.Add("320x240");
+                resolution_items.Add("640x480");
+                resolution_items.Add("960x720");
+                resolution_items.Add("1280x960");
+                resolution_items.Add("1600x1200");
+                combo_resolution.Text = "1280x960";
             }
-
+            else if ((string)cb.Content == "16:9")
+            {
+                resolution_items.Add("640x360");
+                resolution_items.Add("960x540");
+                resolution_items.Add("1280x720");
+                resolution_items.Add("1600x900");
+                resolution_items.Add("1920x1080");
+                combo_resolution.Text = "1280x720";
+            }
+            combo_resolution.ItemsSource = resolution_items;
         }
-
-        //take photo
         private void Btn_openCamera_Click(object sender, RoutedEventArgs e)
         {
-            webCam = new VideoCapture(0);
+            int index = int.Parse(tb_open_index.Text);
+            webCam = new VideoCapture(index);
+            string[] res = combo_resolution.Text.Split('x');
+            webCam.Set(CapProp.FrameWidth, int.Parse(res[0]));
+            webCam.Set(CapProp.FrameHeight, int.Parse(res[1]));
             liveLoop = true;
+            if (int.Parse(res[0]) == webCam.Width && int.Parse(res[1]) == webCam.Height)
+                MessageBox.Show($"Camera Capture:{webCam.Width}x{webCam.Height}");
+            else
+            {
+                MessageBox.Show($"Error resolution");
+                webCam.Dispose();
+                return;
+            }
 
+            int si = 0;//4:3
+            RealScale = webCam.Width / 640.0; //反正4:3 16:9寬都是640
+            tb_show_scale.Text = "Real scale: x" + RealScale;
+            if (rb_cam_scale_169.IsChecked == true)
+            {
+                si = 1;
+            }
+            else if (rb_cam_scale_43.IsChecked == true)
+            {
+                si = 0;
+            }
+
+            Mode = ShowMode.camera;
             Task.Run(() =>
             {
                 Mode = ShowMode.camera;
                 while (liveLoop)
                 {
                     mat_cam = webCam.QueryFrame();
-
+                    if (si == 0)
+                    {
+                        CvInvoke.Resize(mat_cam, mat_show, new System.Drawing.Size(640, 480));//4:3
+                    }
+                    else if (si == 1)
+                    {
+                        CvInvoke.Resize(mat_cam, mat_show, new System.Drawing.Size(640, 360));//16:9
+                        Mat blank;
+                        blank = Mat.Zeros(120, 640, DepthType.Cv8U, 3);
+                        CvInvoke.VConcat(mat_show, blank, mat_show);
+                    }
                     this.Dispatcher.Invoke((Action)(() =>
                     {
-                        img_main.Source = BitmapSourceConvert.MatToBitmap(mat_cam);
+                        img_main.Source = BitmapSourceConvert.MatToBitmap(mat_show);
                     }));
                 }
             });
         }
-
+        private void Btn_stop_cam_Click(object sender, RoutedEventArgs e)
+        {
+            liveLoop = false;
+            Mat black = new Mat(480, 640, DepthType.Cv8U, 3);
+            setToZero(ref black);
+            img_main.Source = BitmapSourceConvert.MatToBitmap(black);
+            Mode = ShowMode.none;
+        }
         private void Btn_saveImage_Click(object sender, RoutedEventArgs e)
         {
-            //File.Exists(curFile)
+            //確認有沒有資料夾
             string folder = tb_saveImage_folder.Text;
             if (!Directory.Exists(folder))
                 Directory.CreateDirectory(folder);
 
-            CvInvoke.Imwrite($"{folder}//{tb_saveImage_pretext.Text}{tb_saveImage_count.Text}.png", mat_show);
+            Mat mat_save = new Mat();
+            mat_cam.CopyTo(mat_save);
+            if (cb_threadShow.IsChecked == true)
+            {
+                CvInvoke.Resize(mat_save, mat_save, new System.Drawing.Size(int.Parse(tb_saveSize_width.Text), int.Parse(tb_saveSize_height.Text)));
+            }
+            CvInvoke.Imwrite($"{folder}//{tb_saveImage_pretext.Text}{tb_saveImage_count.Text}.png", mat_save);
             tb_saveImage_count.Text = (int.Parse(tb_saveImage_count.Text) + 1).ToString();
         }
         private static readonly System.Text.RegularExpressions.Regex _regex = new System.Text.RegularExpressions.Regex("[^0-9.-]+"); //regex that matches disallowed text
@@ -167,7 +253,7 @@ namespace Wpf_labellingTool
                 LoadFolder();
             }
         }
-         void LoadFolder()
+        void LoadFolder()
         {
             if (OpenFolder == "")
             {
@@ -190,7 +276,7 @@ namespace Wpf_labellingTool
             //zero something
             OpenFilesIndex = 0;
 
-            Btn_reLoadImage_Click(null,null);
+            Btn_reLoadImage_Click(null, null);
         }
 
         //---next image---//
@@ -219,15 +305,22 @@ namespace Wpf_labellingTool
         private void Btn_reLoadImage_Click(object sender, RoutedEventArgs e)
         {
             boundtype = BoundBox.none;
+
+            //clear all label list
             LabelList = new List<LabellingInfo>();
+            ClearAllShowedRect();
+
+            //load and show image
             lb_loadImage.Content = $"Load Image({OpenFilesIndex + 1}/{OpenFiles.Count()}) : " + OpenFiles[OpenFilesIndex].Name;
             mat_LoadImage = CvInvoke.Imread(OpenFiles[OpenFilesIndex].FullName);
-
             loadImageSize = mat_LoadImage.Size;
-            mat_show = new Mat(loadImageSize, DepthType.Cv8U, 3);
-            mat_guideLine = new Mat(loadImageSize, DepthType.Cv8U, 3);
-            mat_boundBox_tmp = new Mat(loadImageSize, DepthType.Cv8U, 3);
-            mat_boundBox = new Mat(loadImageSize, DepthType.Cv8U, 3);
+            img_main.Source = BitmapSourceConvert.MatToBitmap(mat_LoadImage);
+
+            //scaling problem.
+            RealScale = loadImageSize.Width / 640.0; //反正4:3 16:9寬都是640
+            tb_show_scale.Text = "Real scale: x" + RealScale;
+
+
             if (cb_loadOldLabel.IsChecked == true)//如果要讀已經lebel過的檔案
             {
                 string fileName = OpenFiles[OpenFilesIndex].FullName.Replace(".png", ".txt");
@@ -243,16 +336,16 @@ namespace Wpf_labellingTool
                         double height = allString[line].Split(' ')[4].ToDouble();
 
                         Rectangle rect = new Rectangle();
-                        rect.Width = (int)(width * loadImageSize.Width);
-                        rect.Height = (int)(height * loadImageSize.Height);
-                        rect.X = (int)((x_center * loadImageSize.Width) - (rect.Width / 2));
-                        rect.Y = (int)((y_center * loadImageSize.Height) - (rect.Height / 2));
+                        rect.Width = (int)(width * loadImageSize.Width / RealScale);
+                        rect.Height = (int)(height * loadImageSize.Height / RealScale);
+                        rect.X = (int)((x_center * loadImageSize.Width/ RealScale) - (rect.Width / 2) );
+                        rect.Y = (int)((y_center * loadImageSize.Height / RealScale) - (rect.Height / 2));
                         LabelList.Add(new LabellingInfo(index, rect));
                     }
-                    DrawLabellingBox();
+                    ReShowLabellingRect();
                 }
             }
-            ImageUpdate(threadLoop);
+            grid_save_notice.Background = new SolidColorBrush(Color.FromRgb(255, 100, 100));//unsave
         }
         private void Btn_saveLabelling_Click(object sender, RoutedEventArgs e)
         {
@@ -265,12 +358,12 @@ namespace Wpf_labellingTool
                     if (info.Index >= 0)
                     {
                         //<x_center> <y_center> <width> <height> - float values relative to width and height of image, it can be equal from (0.0 to 1.0]
-                        double x_center = (info.boundingbox.X + info.boundingbox.Width / 2.0) / (double)loadImageSize.Width;
+                        double x_center = (info.boundingbox.X + info.boundingbox.Width / 2.0) * RealScale / (double)loadImageSize.Width;
                         if (x_center > 1) x_center = 1; if (x_center < 0) x_center = 0.0001;//防止超過邊線(0,1]
-                        double y_center = (info.boundingbox.Y + info.boundingbox.Height / 2.0) / (double)loadImageSize.Height;
+                        double y_center = (info.boundingbox.Y + info.boundingbox.Height / 2.0) * RealScale / (double)loadImageSize.Height;
                         if (y_center > 1) y_center = 1; if (y_center < 0) y_center = 0.0001;//防止超過邊線(0,1]
-                        double width =Math.Abs( ((double)info.boundingbox.Width / (double)loadImageSize.Width));//正負不影響center值(但規定要正值)
-                        double height = Math.Abs(((double)info.boundingbox.Height / (double)loadImageSize.Height));
+                        double width = Math.Abs(((double)info.boundingbox.Width * RealScale / (double)loadImageSize.Width));//正負不影響center值(但規定要正值)
+                        double height = Math.Abs(((double)info.boundingbox.Height * RealScale / (double)loadImageSize.Height));
                         string str = $"{info.Index.ToString()} {x_center.ToString("0.0000")} {y_center.ToString("0.0000")} {width.ToString("0.0000")} {height.ToString("0.0000")}";
 
                         txt.WriteLine(str);
@@ -283,8 +376,9 @@ namespace Wpf_labellingTool
                 }
                 txt.Flush();
                 txt.Close();
-                CvInvoke.Rectangle(mat_boundBox, new Rectangle(0, 0, loadImageSize.Width, loadImageSize.Height), new MCvScalar(100, 200, 110), 10);
-                ImageUpdate(threadLoop);
+                grid_save_notice.Background = new SolidColorBrush(Color.FromRgb(66, 204, 45));//saved
+                //CvInvoke.Rectangle(mat_boundBox, new Rectangle(0, 0, loadImageSize.Width, loadImageSize.Height), new MCvScalar(100, 200, 110), 10);
+                //ImageUpdate(threadLoop);
             }
             else
             {
@@ -295,39 +389,9 @@ namespace Wpf_labellingTool
         private void Btn_clearLabel_Click(object sender, RoutedEventArgs e)
         {
             LabelList = new List<LabellingInfo>();
-            DrawLabellingBox();
-            ImageUpdate(threadLoop);
+            ReShowLabellingRect();
         }
-        public void DrawLabellingBox()
-        {
-            mat_boundBox = new Mat(loadImageSize, DepthType.Cv8U, 3);
-            mat_boundBox_tmp = new Mat(loadImageSize, DepthType.Cv8U, 3);
-            setToZero(ref mat_boundBox);
-            foreach (LabellingInfo info in LabelList)
-            {
-                if (info.Index >= 0)
-                {
-                    CvInvoke.Rectangle(mat_boundBox, info.boundingbox, new MCvScalar(100, 200, 110), 2);
-                    CvInvoke.PutText(mat_boundBox, $"[{info.Index.ToString()}]", info.boundingbox.Location, FontFace.HersheySimplex, 0.5, new MCvScalar(100, 200, 110), 1);
-                }
-                else//代表沒有定義index過
-                {
-                    CvInvoke.Rectangle(mat_boundBox_tmp, info.boundingbox, new MCvScalar(100, 150, 255), 2);
-                }
-            }
-        }
-        public void CleanLabel()
-        {
-            if (LabelList.Count == 0)
-                return;
-            mat_boundBox_tmp = new Mat(loadImageSize, DepthType.Cv8U, 3);
-            if (LabelList.Last().Index < 0)//代表沒定義過，還在set 階段，就去除
-            {
-                boundtype = BoundBox.none;
-                LabelList.Remove(LabelList.Last());
-            }
-
-        }
+    
 
         #region //---key---\\
         private void Grid_MouseEnter(object sender, MouseEventArgs e)
@@ -349,23 +413,22 @@ namespace Wpf_labellingTool
                     if (str.IndexOf("NumPad") >= 0)
                     {
                         LabelList.Last().Index = int.Parse(str.Substring(6));
-                        DrawLabellingBox();
-
+                        //DrawLabellingBox();
                         boundtype = BoundBox.done;
-                        ImageUpdate(threadLoop);
+                        ReShowLabellingRect();
+                        //ImageUpdate(threadLoop);
                     }
                     else
                     {
-                        if (e.Key == Key.R)
-                        {
-                            CleanLabel();
-                            DrawLabellingBox();
-                            ImageUpdate(threadLoop);
-                        }
-                        else
-                            MessageBox.Show("Please enter the label or cancle");
+                        //if (e.Key == Key.R)
+                        //{
+                        //CleanLabel();
+                        //DrawLabellingBox();
+                        //ImageUpdate(threadLoop);
+                        //}
+                        //else
+                        MessageBox.Show("Please enter the label or cancle");
                     }
-
                 }
                 else if (boundtype == BoundBox.done || boundtype == BoundBox.none)//hot key
                 {
@@ -397,30 +460,170 @@ namespace Wpf_labellingTool
         BoundBox boundtype = BoundBox.none;
         Point mousePress = new Point();
         Point mouseRelease = new Point();
+        System.Windows.Shapes.Rectangle setRect;
+
+        public void ClearDragRect()
+        {
+            line_box_t.X1 = 0; line_box_t.Y1 = 0; line_box_t.X2 = 0; line_box_t.Y2 = 0;
+            line_box_l.X1 = 0; line_box_l.Y1 = 0; line_box_l.X2 = 0; line_box_l.Y2 = 0;
+            line_box_b.X1 = 0; line_box_b.Y1 = 0; line_box_b.X2 = 0; line_box_b.Y2 = 0;
+            line_box_r.X1 = 0; line_box_r.Y1 = 0; line_box_r.X2 = 0; line_box_r.Y2 = 0;
+        }
+        public void ClearSetRect()
+        {
+            grid_image.Children.Remove(setRect);
+        }
+        public void ClearTempRect()
+        {
+            ClearDragRect();
+            ClearSetRect();
+            if (boundtype == BoundBox.set)//如果已經是set狀態(上一個沒有label完成)，就要重新刪掉上個未完成的框
+            {
+                LabelList.Remove(LabelList.Last());
+            }
+        }
+        public void ReShowLabellingRect()
+        {
+            ClearAllShowedRect();
+            foreach (LabellingInfo info in LabelList)
+            {
+                if (info.Index >= 0)
+                {
+                    System.Windows.Shapes.Rectangle rect;
+                    rect = new System.Windows.Shapes.Rectangle();
+                    rect.Stroke = new SolidColorBrush(Color.FromRgb(128, 201, 58));//128, 201, 58
+                    rect.StrokeThickness = 2;
+                    rect.HorizontalAlignment = HorizontalAlignment.Left;
+                    rect.VerticalAlignment = VerticalAlignment.Top;
+                    rect.Margin = new Thickness(info.boundingbox.X, info.boundingbox.Y, 0, 0);
+                    rect.Height = info.boundingbox.Height;
+                    rect.Width = info.boundingbox.Width;
+                    grid_image.Children.Add(rect);
+
+                    TextBlock tb = new TextBlock();
+                    tb.Text = info.Index.ToString();
+                    tb.TextWrapping = TextWrapping.Wrap;
+                    tb.Height = 20;
+                    tb.Width = 11;
+                    tb.FontSize = 16;
+                    tb.HorizontalAlignment = HorizontalAlignment.Left;
+                    tb.VerticalAlignment = VerticalAlignment.Top;
+                    tb.Foreground = new SolidColorBrush(Color.FromRgb(255, 255, 255));
+                    tb.Background = new SolidColorBrush(Color.FromRgb(128, 201, 58));
+                    tb.Margin = new Thickness(info.boundingbox.X + 2, info.boundingbox.Y, 0, 0);
+                    grid_image.Children.Add(tb);
+                    //Console.WriteLine("draw rect");
+                    //CvInvoke.Rectangle(mat_boundBox, info.boundingbox, new MCvScalar(100, 200, 110), 2);
+                    //CvInvoke.PutText(mat_boundBox, $"[{info.Index.ToString()}]", info.boundingbox.Location, FontFace.HersheySimplex, 0.5, new MCvScalar(100, 200, 110), 1);
+                }
+                else//代表沒有定義index過
+                {
+                    //CvInvoke.Rectangle(mat_boundBox_tmp, info.boundingbox, new MCvScalar(100, 150, 255), 2);
+                }
+            }
+        }
+        public void ClearAllShowedRect()
+        {
+            //使用他應該就是什麼暫存的都不要了。
+            ClearTempRect();
+
+            while (grid_image.Children.Count > 10)//10個(index = 9)預設的東西，剩餘全刪除
+                grid_image.Children.RemoveAt(10);
+
+            boundtype = BoundBox.none;//並回歸none
+        }
+
+        //label
         private void Img_main_MouseDown(object sender, MouseButtonEventArgs e)
         {
             mousePoint = new Point((int)e.GetPosition((IInputElement)sender).X, (int)e.GetPosition((IInputElement)sender).Y);
             mousePress = mousePoint;
+            if (Mode == ShowMode.video)//避免在攝影機模式下使用labeling
+                return;
             if (e.ChangedButton == MouseButton.Left)
             {
-                if (Mode == ShowMode.file)//避免在攝影機模式下使用labeling
-                {
-                    if (boundtype == BoundBox.set)//如果已經是set狀態(上一個沒有label完成)，就要重新刪掉上個未完成的框
-                    {
-                        LabelList.Remove(LabelList.Last());
-                        DrawLabellingBox();
-                    }
-                    boundtype = BoundBox.mouseDown;
-                    ImageUpdate(threadLoop);
-                }
+                ClearTempRect();
+                boundtype = BoundBox.mouseDown;
             }
             else if (e.ChangedButton == MouseButton.Right)
             {
-                CleanLabel();
-                DrawLabellingBox();
-                ImageUpdate(threadLoop);
+                //CleanLabel();
+                //DrawLabellingBox();
+                //ImageUpdate(threadLoop);
             }
 
+        }
+        private void Img_main_MouseMove(object sender, MouseEventArgs e)
+        {
+            mousePoint = new Point((int)e.GetPosition((IInputElement)sender).X, (int)e.GetPosition((IInputElement)sender).Y);
+
+            line_x1.X1 = 0;
+            line_x1.Y1 = mousePoint.Y;
+            line_x1.X2 = mousePoint.X - 5;
+            line_x1.Y2 = mousePoint.Y;
+            line_x2.X1 = mousePoint.X + 5;
+            line_x2.Y1 = mousePoint.Y;
+            line_x2.X2 = 640;
+            line_x2.Y2 = mousePoint.Y;
+
+            line_y1.X1 = mousePoint.X;
+            line_y1.Y1 = 0;
+            line_y1.X2 = mousePoint.X;
+            line_y1.Y2 = mousePoint.Y - 5;
+            line_y2.X1 = mousePoint.X;
+            line_y2.Y1 = mousePoint.Y + 5;
+            line_y2.X2 = mousePoint.X;
+            line_y2.Y2 = 480;
+
+
+
+            if (Mode == ShowMode.file)
+            {
+                //mat_guideLine = new Mat(loadImageSize, DepthType.Cv8U, 3);
+                //CvInvoke.Line(mat_guideLine, new Point(0, mousePoint.Y), new Point(loadImageSize.Width, mousePoint.Y), new MCvScalar(50, 50, 230));
+                //CvInvoke.Line(mat_guideLine, new Point(mousePoint.X, 0), new Point(mousePoint.X, loadImageSize.Height), new MCvScalar(50, 50, 230));
+
+                if (boundtype == BoundBox.mouseDown)
+                {
+                    mat_boundBox_tmp = new Mat(loadImageSize, DepthType.Cv8U, 3);
+
+                    //Rectangle rect = new Rectangle(mousePress.X, mousePress.Y, mousePoint.X - mousePress.X, mousePoint.Y - mousePress.Y);
+                    //CvInvoke.Rectangle(mat_boundBox_tmp, rect, new MCvScalar(100, 200, 255), 2);
+                    //dragRect.Margin = new Thickness(mousePress.X, mousePress.Y, 0, 0);
+                    //dragRect.Height = Math.Abs(mousePoint.Y - mousePress.Y);
+                    //dragRect.Width = Math.Abs(mousePoint.X - mousePress.X);
+                    line_box_t.X1 = mousePress.X;
+                    line_box_t.Y1 = mousePress.Y;
+                    line_box_t.X2 = mousePoint.X;
+                    line_box_t.Y2 = mousePress.Y;
+
+                    line_box_l.X1 = mousePress.X;
+                    line_box_l.Y1 = mousePress.Y;
+                    line_box_l.X2 = mousePress.X;
+                    line_box_l.Y2 = mousePoint.Y;
+
+                    line_box_b.X1 = mousePress.X;
+                    line_box_b.Y1 = mousePoint.Y;
+                    line_box_b.X2 = mousePoint.X;
+                    line_box_b.Y2 = mousePoint.Y;
+
+                    line_box_r.X1 = mousePoint.X;
+                    line_box_r.Y1 = mousePress.Y;
+                    line_box_r.X2 = mousePoint.X;
+                    line_box_r.Y2 = mousePoint.Y;
+
+                    if (mousePress.X < mousePoint.X)
+                        line_box_b.X2 -= 2;
+                    else if (mousePress.X > mousePoint.X)
+                        line_box_b.X2 += 2;
+
+                    if (mousePress.Y < mousePoint.Y)
+                        line_box_r.Y2 -= 2;
+                    else if (mousePress.Y > mousePoint.Y)
+                        line_box_r.Y2 += 2;
+                }
+            }
+            //ImageUpdate(threadLoop);
         }
         private void Img_main_MouseUp(object sender, MouseButtonEventArgs e)
         {
@@ -429,41 +632,53 @@ namespace Wpf_labellingTool
             if (Mode == ShowMode.file)
             {
                 boundtype = BoundBox.set;
+
+                //新增到labbling box裡面
                 Rectangle rect = new Rectangle(mousePress.X, mousePress.Y, mouseRelease.X - mousePress.X, mouseRelease.Y - mousePress.Y);
+                if (rect.Width < 0)
+                {
+                    rect.X = mouseRelease.X;
+                    rect.Width = Math.Abs(rect.Width);
+                }
+                if (rect.Height < 0)
+                {
+                    rect.Y = mouseRelease.Y;
+                    rect.Height = Math.Abs(rect.Height);
+                }
+                //加入label list (lock的話就直接給定index，按下數字鍵就給定index，重新按下滑鼠則刪除重新來過)
                 LabelList.Add(new LabellingInfo(-1, rect));
 
+                ClearDragRect();
+                setRect = new System.Windows.Shapes.Rectangle();
+                setRect.Stroke = new SolidColorBrush(Color.FromRgb(240, 179, 83));
+                setRect.StrokeThickness = 2;
+                setRect.HorizontalAlignment = HorizontalAlignment.Left;
+                setRect.VerticalAlignment = VerticalAlignment.Top;
+                setRect.Margin = new Thickness(rect.X, rect.Y, 0, 0);
+                setRect.Height = rect.Height;
+                setRect.Width = rect.Width;
+                grid_image.Children.Add(setRect);
+
+                //如果lock了，則進入done mode
                 if (cb_lockIndex.IsChecked == true)//如果有lock index
                 {
                     LabelList.Last().Index = int.Parse(tb_lockIndex.Text);
                     boundtype = BoundBox.done;
+                    ReShowLabellingRect();
                 }
+                //ShowLabellingRect();
 
                 //draw boundBox
-                DrawLabellingBox();
-                ImageUpdate(threadLoop);
+                //DrawLabellingBox();
+                //ImageUpdate(threadLoop);
+
             }
         }
 
-        private void Img_main_MouseMove(object sender, MouseEventArgs e)
+        private void Button_Click(object sender, RoutedEventArgs e)
         {
-            mousePoint = new Point((int)e.GetPosition((IInputElement)sender).X, (int)e.GetPosition((IInputElement)sender).Y);
-
-            if (Mode == ShowMode.file)
-            {
-                mat_guideLine = new Mat(loadImageSize, DepthType.Cv8U, 3);
-                CvInvoke.Line(mat_guideLine, new Point(0, mousePoint.Y), new Point(loadImageSize.Width, mousePoint.Y), new MCvScalar(50, 50, 230));
-                CvInvoke.Line(mat_guideLine, new Point(mousePoint.X, 0), new Point(mousePoint.X, loadImageSize.Height), new MCvScalar(50, 50, 230));
-
-                if (boundtype == BoundBox.mouseDown)
-                {
-                    mat_boundBox_tmp = new Mat(loadImageSize, DepthType.Cv8U, 3);
-                    Rectangle rect = new Rectangle(mousePress.X, mousePress.Y, mousePoint.X - mousePress.X, mousePoint.Y - mousePress.Y);
-                    CvInvoke.Rectangle(mat_boundBox_tmp, rect, new MCvScalar(100, 200, 255), 2);
-                }
-            }
-            ImageUpdate(threadLoop);
+            ReShowLabellingRect();
         }
-
         #endregion \\---image mouse---//
 
         public static void setToZero(ref Mat mat)
@@ -475,30 +690,31 @@ namespace Wpf_labellingTool
         bool threadLoop = false;
         private void Cb_threadShow_Click(object sender, RoutedEventArgs e)
         {
-            if (cb_threadShow.IsChecked == true)
-            {
-                if (mat_LoadImage == null)
-                {
-                    cb_threadShow.IsChecked = false;
-                    MessageBox.Show("Load img == null");
-                    return;
-                }
+            //ABAND!
+            //if (cb_threadShow.IsChecked == true)
+            //{
+            //    if (mat_LoadImage == null)
+            //    {
+            //        cb_threadShow.IsChecked = false;
+            //        MessageBox.Show("Load img == null");
+            //        return;
+            //    }
 
-                threadLoop = true;
-                Task.Run(() =>
-                {
-                    while (threadLoop == true)
-                    {
-                        Dispatcher.Invoke((Action)(() => { ImageUpdate(false); }));
+            //    threadLoop = true;
+            //    Task.Run(() =>
+            //    {
+            //        while (threadLoop == true)
+            //        {
+            //            Dispatcher.Invoke((Action)(() => { ImageUpdate(false); }));
 
-                        Thread.Sleep(10);
-                    }
-                });
-            }
-            else
-            {
-                threadLoop = false;
-            }
+            //            Thread.Sleep(10);
+            //        }
+            //    });
+            //}
+            //else
+            //{
+            //    threadLoop = false;
+            //}
 
         }
 
@@ -641,6 +857,9 @@ namespace Wpf_labellingTool
             sw_test.Flush();
             sw_test.Close();
         }
+
+
+
         #endregion \\testing file//
 
 
@@ -788,6 +1007,11 @@ namespace Wpf_labellingTool
             CvInvoke.Imwrite($"thres.png", mask);
             ((Mat)upLayer).CopyTo(baseImg, mask);
             CvInvoke.Imwrite($"out.png", baseImg);
+        }
+        public static void setToZero(ref Mat mat)
+        {
+            byte[] value = new byte[mat.Rows * mat.Cols * mat.ElementSize];
+            Marshal.Copy(value, 0, mat.DataPointer, mat.Rows * mat.Cols * mat.ElementSize);
         }
     }
 
