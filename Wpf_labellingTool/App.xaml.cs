@@ -6,7 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 
-namespace wpf_labelling_tool
+namespace Wpf_labellingTool
 {
     /// <summary>
     /// App.xaml 的互動邏輯
