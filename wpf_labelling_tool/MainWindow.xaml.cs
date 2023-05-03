@@ -155,7 +155,7 @@ namespace wpf_labelling_tool
 
             int si = 0;//4:3
             RealScale = webCam.Width / 640.0; //反正4:3 16:9寬都是640
-            tb_show_scale.Text = "Real scale: x" + RealScale;
+            tb_show_scale.Text = "Real scale: x" + RealScale.ToString("0.00");
             if (rb_cam_scale_169.IsChecked == true)
             {
                 si = 1;
@@ -207,7 +207,7 @@ namespace wpf_labelling_tool
 
             Mat mat_save = new Mat();
             mat_cam.CopyTo(mat_save);
-            if (cb_threadShow.IsChecked == true)
+            if (cb_save_resize.IsChecked == true)
             {
                 CvInvoke.Resize(mat_save, mat_save, new System.Drawing.Size(int.Parse(tb_saveSize_width.Text), int.Parse(tb_saveSize_height.Text)));
             }
@@ -770,11 +770,16 @@ namespace wpf_labelling_tool
                 }
             }
         }
+        private void btn_clear_addin_Click(object sender, RoutedEventArgs e)
+        {
+            ListViewDataCollection.Clear();
+        }
 
+        const string txt_name_all = "all_data.txt";
         private void Btn_creatTrainFile_Click(object sender, RoutedEventArgs e)
         {
-            //TODO:應該要確認圖片有沒有配合txt 沒有的話就不要加入
-            StreamWriter sw = new StreamWriter("All.txt", false);
+   
+            StreamWriter sw = new StreamWriter(txt_name_all, false);
 
             //each row of listView
             foreach (ListViewData lv in ListViewDataCollection)
@@ -783,6 +788,7 @@ namespace wpf_labelling_tool
                 OpenFiles = OpenDirectory.GetFiles("*.png"); //Getting Text files
                 if (tb_preText.Text.LastIndexOf("/") != tb_preText.Text.Count() - 1)
                     tb_preText.Text += "/";
+
                 //each row of png in folder
                 foreach (FileInfo fi in OpenFiles)
                 {
@@ -792,45 +798,13 @@ namespace wpf_labelling_tool
             }
             sw.Flush();
             sw.Close();
+            creat_train_test_text();
         }
-        #endregion \\trainning file//
-
-        #region //testing file\\
-        private void Slider_trainninPercent_DataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
+      
+        private void creat_train_test_text()
         {
-            Console.WriteLine(Slider_trainninPercent.Value.ToString());
-        }
-
-        private void Slider_trainninPercent_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
-        {
-            Console.WriteLine(Slider_trainninPercent.Value.ToString());
-            int TrainPer = (int)((100 - Slider_trainninPercent.Value));
-
-            if (tb_trainninPercent != null)
-                tb_trainninPercent.Text = $"{TrainPer.ToString()} / {(100 - TrainPer).ToString()}";
-        }
-
-        private void Tb_trainFilePath_PreviewDragOver(object sender, DragEventArgs e)
-        {//textbox Drag會被搶走，所以要拿回來
-            e.Handled = true;
-        }
-        private void Tb_trainFilePath_Drop(object sender, DragEventArgs e)
-        {
-            if (e.Data.GetDataPresent(DataFormats.FileDrop))
-            {
-                string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
-                if (files.Count() > 1)
-                {
-                    MessageBox.Show("one file only");
-                    return;
-                }
-                tb_trainFilePath.Text = files[0];
-            }
-        }
-
-        private void Btn_creatTest_Click(object sender, RoutedEventArgs e)
-        {
-            string[] allString = System.IO.File.ReadAllLines(tb_trainFilePath.Text);
+            //string[] allString = System.IO.File.ReadAllLines(tb_trainFilePath.Text);
+            string[] allString = System.IO.File.ReadAllLines(txt_name_all);
             double testPer = Slider_trainninPercent.Value;
             int gap = (int)(100.0 / testPer);//每隔多少取一個
 
@@ -857,11 +831,15 @@ namespace wpf_labelling_tool
             sw_test.Flush();
             sw_test.Close();
         }
+        private void Slider_trainninPercent_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            int TrainPer = (int)((100 - Slider_trainninPercent.Value));
 
+            if (tb_trainninPercent != null)
+                tb_trainninPercent.Text = $"{TrainPer.ToString()} / {(100 - TrainPer).ToString()}";
+        }
 
-
-        #endregion \\testing file//
-
+      #endregion \\trainning file//
 
     }
     public class LabellingInfo

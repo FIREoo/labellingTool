@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:wpf_labelling_tool"
         mc:Ignorable="d"
-       Title="Labelling Tool 2.0" Height="1194.575" Width="1050.167" >
+       Title="Labelling Tool 2.0" Height="555" Width="1050.167" >
     <Grid>
         <Button x:Name="btn_openCamera" Content="Open cam" HorizontalAlignment="Left" Margin="15,10,0,0" VerticalAlignment="Top" Width="75" Height="31" Click="Btn_openCamera_Click"/>
         <Grid x:Name="grid_save_notice" HorizontalAlignment="Left" Height="486" Margin="10,44,0,0" VerticalAlignment="Top" Width="650" Background="#FFFF6464"/>
@@ -21,30 +21,6 @@
             <Line x:Name="line_box_r"  X1="0" Y1="0"    X2="0" Y2="0"    Stroke="#FFE2A31B"    StrokeThickness="2" StrokeDashArray="2, 1"/>
             <Grid x:Name="grid_img_click_mask" HorizontalAlignment="Left" Height="480" VerticalAlignment="Top" Width="640" Cursor="Cross" MouseDown="Img_main_MouseDown" MouseUp="Img_main_MouseUp" MouseMove="Img_main_MouseMove" Background="#02000000"/>
         </Grid>
-
-        <TabControl HorizontalAlignment="Left" Height="327" Margin="429,573,0,0" VerticalAlignment="Top" Width="381" FontSize="20">
-            <TabItem Header="Labelling">
-                <Grid Background="#FFE5E5E5"/>
-            </TabItem>
-            <TabItem Header="Tranning text">
-                <Grid Background="#FFE5E5E5"/>
-            </TabItem>
-            <TabItem   Header="Text config">
-                <Grid Background="#FFE5E5E5">
-                    <TextBox x:Name="tb_trainFilePath" HorizontalAlignment="Left" VerticalContentAlignment="Center" Height="35" Margin="10,10,0,0" TextWrapping="Wrap" AllowDrop="True" Text="Drop in All.txt" VerticalAlignment="Top" Width="355" Drop="Tb_trainFilePath_Drop" PreviewDragOver="Tb_trainFilePath_PreviewDragOver" FontSize="16"/>
-                    <Slider x:Name="Slider_trainninPercent" HorizontalAlignment="Left" Margin="10,45,0,0" VerticalAlignment="Top" Width="220" SmallChange="5" Value="20" DataContextChanged="Slider_trainninPercent_DataContextChanged" ValueChanged="Slider_trainninPercent_ValueChanged" Maximum="100" LargeChange="5" TickFrequency="10" TickPlacement="Both"/>
-                    <TextBlock HorizontalAlignment="Left" Margin="10,72,0,0" TextWrapping="Wrap" Text="Train" VerticalAlignment="Top"/>
-                    <TextBlock HorizontalAlignment="Left" Margin="191,72,0,0" TextWrapping="Wrap" Text="Test" VerticalAlignment="Top"/>
-                    <TextBlock x:Name="tb_trainninPercent" HorizontalAlignment="Left" Margin="91,72,0,0" TextWrapping="Wrap" Text="80 / 20" VerticalAlignment="Top"/>
-                    <Button x:Name="btn_creatTest" Content="Creat test.txt" HorizontalAlignment="Left" Margin="10,102,0,0" VerticalAlignment="Top" Width="146" Click="Btn_creatTest_Click"/>
-                </Grid>
-            </TabItem>
-        </TabControl>
-        <CheckBox x:Name="cb_threadShow" Content="Thread Show" HorizontalAlignment="Left" Margin="856,590,0,0" VerticalAlignment="Top" FontSize="14" Click="Cb_threadShow_Click">
-            <CheckBox.LayoutTransform>
-                <ScaleTransform ScaleX="1.25" ScaleY="1.25" />
-            </CheckBox.LayoutTransform>
-        </CheckBox>
         <TabControl HorizontalAlignment="Left" Height="480" Margin="660,10,0,0" VerticalAlignment="Top" Width="352" FontSize="20">
             <TabItem Header="Capture">
                 <Grid Background="#FFE5E5E5">
@@ -168,8 +144,14 @@
                             </GridView>
                         </ListView.View>
                     </ListView>
-                    <Button x:Name="btn_creatTrainFile" Content="Creat File" HorizontalAlignment="Left" Margin="54,292,0,0" VerticalAlignment="Top" Width="114" Click="Btn_creatTrainFile_Click"/>
+                    <Button x:Name="btn_creatTrainFile" Content="Creat train.txt/test.txt" HorizontalAlignment="Left" Margin="54,386,0,0" VerticalAlignment="Top" Width="266" Click="Btn_creatTrainFile_Click" />
                     <TextBlock HorizontalAlignment="Left" Margin="54,74,0,0" TextWrapping="Wrap" Text="Drop in or Click Add" VerticalAlignment="Top" FontSize="12"/>
+                    <Slider x:Name="Slider_trainninPercent" HorizontalAlignment="Left" Margin="106,326,0,0" VerticalAlignment="Top" Width="170" SmallChange="5" Value="20" ValueChanged="Slider_trainninPercent_ValueChanged" Maximum="100" LargeChange="5" TickFrequency="10" TickPlacement="Both"/>
+                    <TextBlock HorizontalAlignment="Left" Margin="54,328,0,0" TextWrapping="Wrap" Text="Train" VerticalAlignment="Top"/>
+                    <TextBlock HorizontalAlignment="Left" Margin="281,328,0,0" TextWrapping="Wrap" Text="Test" VerticalAlignment="Top"/>
+                    <TextBlock x:Name="tb_trainninPercent" HorizontalAlignment="Left" Margin="100,356,0,0" TextWrapping="Wrap" Text="80 / 20" VerticalAlignment="Top" Width="176" TextAlignment="Center"/>
+                    <Button x:Name="btn_clear_addin" Content="Clear" HorizontalAlignment="Left" Margin="250,292,0,0" VerticalAlignment="Top" Width="70" Click="btn_clear_addin_Click"/>
+                    <TextBlock HorizontalAlignment="Left" Margin="54,293,0,0" TextWrapping="Wrap" Text="Will creat a all_data.txt file with all .png file name." VerticalAlignment="Top" FontSize="12" Width="196"/>
                 </Grid>
             </TabItem>
         </TabControl>
@@ -179,10 +161,9 @@
             <RadioButton x:Name="rb_cam_scale_169" Content="16:9" HorizontalAlignment="Left" Margin="63,7,0,0" VerticalAlignment="Top" Click="rb_cam_scale_Click"/>
         </Grid>
         <Button x:Name="btn_stop_cam" Content="Stop cam" HorizontalAlignment="Left" Margin="376,8,0,0" VerticalAlignment="Top" Width="75" Height="31" Click="Btn_stop_cam_Click"/>
-        <Grid x:Name="Grid_1" HorizontalAlignment="Left" Height="170" Margin="90,573,0,0" VerticalAlignment="Top" Width="173" Background="#FFF0C553"/>
         <ComboBox x:Name="combo_resolution" HorizontalAlignment="Left" Margin="251,13,0,0" VerticalAlignment="Top" Width="120">
         </ComboBox>
-        <TextBlock x:Name="tb_show_scale" HorizontalAlignment="Left" Margin="574,24,0,0" TextWrapping="Wrap" Text="Show scale: x1" VerticalAlignment="Top" Foreground="Black" Height="auto" Width="auto"/>
+        <TextBlock x:Name="tb_show_scale" HorizontalAlignment="Left" Margin="572,24,0,0" TextWrapping="Wrap" Text="Show scale: x1" VerticalAlignment="Top" Foreground="Black" Height="auto" Width="auto"/>
 
 
     </Grid>
